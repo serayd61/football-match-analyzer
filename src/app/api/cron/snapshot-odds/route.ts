@@ -26,6 +26,8 @@ import { parseMarkets } from '@/lib/site/markets';
 import type { OddsPhase } from '@/lib/site/odds-phases';
 import { afOdds, afToMatchOdds, hasApiFootballKey, type AfOdds, type AfBookPrices } from '@/lib/data-sources/api-football';
 import { afIdsFor, buildAfMap } from '@/lib/site/af-map';
+import { flEvents, flOdds, hasFlashKey } from '@/lib/data-sources/flashlive';
+import { fillFlashOu, type FlashResult } from '@/lib/site/flash-ou';
 
 export const dynamic = 'force-dynamic';
 export const maxDuration = 120;
@@ -94,11 +96,11 @@ export async function GET(request: NextRequest) {
   // tek istekte en çok 1000 satır verir (limit(4000) sessizce 1000'e iner). 17 Eki:
   // 3055 satırlık hafta sonunda Championship 14:00Z maçları kesildi, hiç oran almadı.
   // Çözüm: 1000'lik sayfalarla oku.
-  const preds: Array<{ fixture_id: number; league_id: number; league_name: string; kickoff: string }> = [];
+  const preds: Array<{ fixture_id: number; league_id: number; league_name: string; kickoff: string; home_name: string | null; away_name: string | null }> = [];
   for (let from = 0; ; from += PAGE) {
     const { data, error } = await sb()
       .from('engine_predictions')
-      .select('fixture_id, league_id, league_name, kickoff')
+      .select('fixture_id, league_id, league_name, kickoff, home_name, away_name')
       .eq('settled', false)
       .gte('kickoff', now.toISOString())
       .lte('kickoff', horizon.toISOString())
@@ -279,11 +281,44 @@ export async function GET(request: NextRequest) {
     }
   }
 
+  // FlashLive (2026-11-24): API-Football yokken Üst/Alt 2,5'in tek kaynağı. Ücretsiz plan ayda
+  // 500 istek → yalnız kapsam içi (tier 0), başlamasına ≤ 24 saat kalan maç, maç başına tek çağrı;
+  // sonraki fazlara son bilinen oran taşınır. Ayrıntı ve bütçe kuralı: lib/site/flash-ou.ts.
+  let flash: FlashResult | null = null;
+  if (!afOn && hasFlashKey()) {
+    const nameOfFix = new Map<number, { home: string; away: string }>();
+    for (const p of preds) if (p.home_name && p.away_name && !nameOfFix.has(Number(p.fixture_id))) nameOfFix.set(Number(p.fixture_id), { home: p.home_name, away: p.away_name });
+    const jobs = candidates
+      .filter((c) => c.tier === 0 && c.phase !== 'opening' && nameOfFix.has(c.fixtureId))
+      .map((c) => ({ fixtureId: c.fixtureId, kickoff: c.kickoff, ...nameOfFix.get(c.fixtureId)! }));
+    try {
+      const redis = getRedisClient();
+      flash = await fillFlashOu(jobs, {
+        now: new Date(),
+        rows: async (fids) => {
+          const out: any[] = [];
+          for (let i = 0; i < fids.length; i += 150) {
+            const { data, error } = await sb().from('prediction_odds').select('fixture_id, phase, over25_odds, under25_odds, ou_provider, btts_yes_odds').in('fixture_id', fids.slice(i, i + 150)).limit(150 * 6);
+            if (error) throw new Error(error.message);
+            out.push(...(data ?? []));
+          }
+          return out;
+        },
+        update: async (fid, phase, cols) => (await sb().from('prediction_odds').update(cols).eq('fixture_id', fid).eq('phase', phase)).error?.message ?? null,
+        kv: { get: (k) => redis.get(k), set: async (k, v, ttl) => { await redis.set(k, v, { ex: ttl }); } },
+        events: flEvents,
+        odds: flOdds,
+      });
+      if (flash.errors.length) console.error('[snapshot-odds] FlashLive hataları:', flash.errors.join(' | '));
+    } catch (e: any) { console.error('[snapshot-odds] flashlive:', e?.message); }
+  }
+
   // Yeni oran yazıldıysa siteyi hemen tazele (gün listesi, 1X2 anlık, pazar kitabı).
-  if (captured + afCaptured + afFilled > 0) { try { revalidateTag(ODDS_TAG); } catch (e: any) { console.warn('[snapshot-odds] revalidate:', e?.message); } }
+  if (captured + afCaptured + afFilled + (flash?.filled ?? 0) + (flash?.carried ?? 0) > 0) { try { revalidateTag(ODDS_TAG); } catch (e: any) { console.warn('[snapshot-odds] revalidate:', e?.message); } }
 
   return NextResponse.json({
     ok: true,
+    flashLive: flash,
     coveredUpcoming: candidates.length,
     pending: todo.length,
     captured,
