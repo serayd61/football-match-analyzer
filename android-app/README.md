@@ -29,6 +29,14 @@ server verification and RTDN live in `/api/play/*` (see docs/play-billing.md).
 Purchases only work in a Play-installed build — sideloaded APKs stay on the
 no-price fallback body.
 
+Since versionCode 7 (1.3.1, 2026-11-23) the app asks Play on launch whether a
+newer version exists (`AppUpdate.java`, Play In-App Updates, flexible flow):
+Play's own dialog, at most once a day, download in the background, install
+when the app next goes to the background. It can only be tested with a build
+installed from Play (internal testing). The same version reconnects the
+billing service after the Play Store was updated or killed; before, purchases
+failed with "billing not ready" until the app was restarted.
+
 ## Build
 
 ```bash
