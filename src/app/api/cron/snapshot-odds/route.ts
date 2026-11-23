@@ -284,8 +284,11 @@ export async function GET(request: NextRequest) {
   // FlashLive (2026-11-24): API-Football yokken Üst/Alt 2,5'in tek kaynağı. Ücretsiz plan ayda
   // 500 istek → yalnız kapsam içi (tier 0), başlamasına ≤ 24 saat kalan maç, maç başına tek çağrı;
   // sonraki fazlara son bilinen oran taşınır. Ayrıntı ve bütçe kuralı: lib/site/flash-ou.ts.
+  // API-Football anahtarı tanımlı olsa da çalışır (24 Kas: hesap askıdayken anahtar Vercel'de
+  // duruyordu, `!afOn` koşulu adımı kapatmıştı). Çakışma olmaz: adım yalnız hiçbir faz satırında
+  // Üst/Alt'ı OLMAYAN maçı sorgular; API-Football yazdıysa o maç zaten atlanır.
   let flash: FlashResult | null = null;
-  if (!afOn && hasFlashKey()) {
+  if (hasFlashKey()) {
     const nameOfFix = new Map<number, { home: string; away: string }>();
     for (const p of preds) if (p.home_name && p.away_name && !nameOfFix.has(Number(p.fixture_id))) nameOfFix.set(Number(p.fixture_id), { home: p.home_name, away: p.away_name });
     const jobs = candidates
