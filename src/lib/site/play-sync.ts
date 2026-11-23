@@ -82,6 +82,9 @@ export async function applyPlayState(
     play_purchase_token: purchaseToken,
     play_product_id: ent.productId,
     status: ent.status,
+    // Same vocabulary as the Stripe-era rows ('free' | 'pro'). Before
+    // 2026-11-23 a Play subscriber kept the 'free' written at signup.
+    plan: ent.entitled ? 'pro' : 'free',
     current_period_end: ent.periodEnd,
     cancel_at_period_end: ent.cancelAtPeriodEnd,
     updated_at: new Date().toISOString(),
