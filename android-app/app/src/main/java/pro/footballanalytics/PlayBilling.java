@@ -54,6 +54,10 @@ final class PlayBilling implements com.android.billingclient.api.PurchasesUpdate
     private final Map<String, ProductDetails> detailsCache = new HashMap<>();
     /** The requestId of the purchase flow currently on screen (-1 = none). */
     private int purchaseRequest = -1;
+    /** A startConnection call is in flight (a second one would be a developer error). */
+    private boolean connecting;
+    /** Bridge calls that arrived while disconnected; drained when the reconnect finishes. */
+    private final List<Runnable> waiting = new ArrayList<>();
 
     PlayBilling(Activity activity, Emitter emitter) {
         this.activity = activity;
@@ -61,26 +65,60 @@ final class PlayBilling implements com.android.billingclient.api.PurchasesUpdate
     }
 
     void connect() {
-        if (client != null) return;
-        client = BillingClient.newBuilder(activity)
-                .setListener(this)
-                .enablePendingPurchases(PendingPurchasesParams.newBuilder().enableOneTimeProducts().build())
-                .build();
+        if (client == null) {
+            client = BillingClient.newBuilder(activity)
+                    .setListener(this)
+                    .enablePendingPurchases(PendingPurchasesParams.newBuilder().enableOneTimeProducts().build())
+                    .build();
+        }
+        startConnection();
+    }
+
+    /**
+     * (Re)connect to the Play Store billing service. The service drops when the
+     * Play Store is updated or killed; before 2026-11-23 the bridge then stayed
+     * dead until the app was restarted and every purchase failed with "billing
+     * not ready". All calls run on the UI thread, so plain fields are enough.
+     */
+    private void startConnection() {
+        if (client == null || connecting) return;
+        connecting = true;
         client.startConnection(new BillingClientStateListener() {
             @Override
             public void onBillingSetupFinished(@NonNull BillingResult result) {
-                ready = result.getResponseCode() == BillingClient.BillingResponseCode.OK
+                connecting = false;
+                ready = client != null
+                        && result.getResponseCode() == BillingClient.BillingResponseCode.OK
                         && client.isFeatureSupported(BillingClient.FeatureType.SUBSCRIPTIONS).getResponseCode()
                         == BillingClient.BillingResponseCode.OK;
+                // Run the calls that arrived while disconnected; each one
+                // re-checks `ready` and answers "billing not ready" if the
+                // reconnect failed.
+                List<Runnable> tasks = new ArrayList<>(waiting);
+                waiting.clear();
+                for (Runnable task : tasks) task.run();
             }
 
             @Override
             public void onBillingServiceDisconnected() {
-                // Next bridge call sees ready == false; the page falls back to
-                // the no-price body. A fresh connection is attempted on restart.
                 ready = false;
+                connecting = false;
+                // One immediate attempt; if the Play Store is still down this
+                // ends in onBillingSetupFinished with an error and the next
+                // bridge call tries again (whenConnected).
+                startConnection();
             }
         });
+    }
+
+    /** Run now when connected; otherwise reconnect first and run when the attempt finishes. */
+    private void whenConnected(Runnable task) {
+        if (ready || client == null) {
+            task.run();
+            return;
+        }
+        waiting.add(task);
+        startConnection();
     }
 
     void end() {
@@ -89,6 +127,8 @@ final class PlayBilling implements com.android.billingclient.api.PurchasesUpdate
             client = null;
         }
         ready = false;
+        connecting = false;
+        waiting.clear();
     }
 
     boolean isReady() {
@@ -97,6 +137,10 @@ final class PlayBilling implements com.android.billingclient.api.PurchasesUpdate
 
     /** Query subscription ProductDetails; answer: {ok:true, offers:[{productId, basePlanId, offerToken, formattedPrice, billingPeriod}]}. */
     void queryProducts(String idsJson, int requestId) {
+        whenConnected(() -> doQueryProducts(idsJson, requestId));
+    }
+
+    private void doQueryProducts(String idsJson, int requestId) {
         if (!ready) {
             emitter.emit(requestId, error("error", "billing not ready"));
             return;
@@ -155,6 +199,10 @@ final class PlayBilling implements com.android.billingclient.api.PurchasesUpdate
 
     /** Launch the Play purchase sheet; the answer arrives via onPurchasesUpdated. */
     void purchase(String productId, String offerToken, String accountId, int requestId) {
+        whenConnected(() -> doPurchase(productId, offerToken, accountId, requestId));
+    }
+
+    private void doPurchase(String productId, String offerToken, String accountId, int requestId) {
         if (!ready) {
             emitter.emit(requestId, error("error", "billing not ready"));
             return;
@@ -189,6 +237,10 @@ final class PlayBilling implements com.android.billingclient.api.PurchasesUpdate
 
     /** Owned subscription purchases (restore); answer: {ok:true, purchases:[{purchaseToken, productIds, acknowledged}]}. */
     void queryPurchases(int requestId) {
+        whenConnected(() -> doQueryPurchases(requestId));
+    }
+
+    private void doQueryPurchases(int requestId) {
         if (!ready) {
             emitter.emit(requestId, error("error", "billing not ready"));
             return;

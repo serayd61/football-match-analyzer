@@ -57,6 +57,7 @@ public class MainActivity extends AppCompatActivity {
 
     private WebView web;
     private PlayBilling billing;
+    private AppUpdate appUpdate;
     private SwipeRefreshLayout swipe;
     private ProgressBar progress;
     private View offline;
@@ -109,6 +110,10 @@ public class MainActivity extends AppCompatActivity {
             }
         });
         billing.connect();
+
+        // Play In-App Updates (v7): offer a newer version on launch.
+        appUpdate = new AppUpdate(this);
+        appUpdate.check();
 
         swipe.setColorSchemeResources(R.color.brand);
         swipe.setOnRefreshListener(() -> {
@@ -403,7 +408,15 @@ public class MainActivity extends AppCompatActivity {
     }
 
     @Override
+    protected void onStop() {
+        // A downloaded update installs while the app is in the background.
+        if (appUpdate != null) appUpdate.installIfDownloaded();
+        super.onStop();
+    }
+
+    @Override
     protected void onDestroy() {
+        if (appUpdate != null) appUpdate.end();
         if (billing != null) billing.end();
         web.destroy();
         super.onDestroy();
