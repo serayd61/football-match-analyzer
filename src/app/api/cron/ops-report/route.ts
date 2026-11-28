@@ -8,6 +8,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { createClient, SupabaseClient } from '@supabase/supabase-js';
 import { sendOpsReportEmail } from '@/lib/email';
 import { ADMIN_EMAILS } from '@/lib/admin/emails';
+import { readFeedQuota, feedQuotaNotice } from '@/lib/data-sources/feed-quota';
 import { buildOpsReport, opsReportHtml, opsReportSubject, opsReportText } from '@/lib/site/ops-report';
 
 export const dynamic = 'force-dynamic';
@@ -44,10 +45,14 @@ export async function GET(req: NextRequest) {
     subs: (subs ?? []).map((s: any) => ({ userId: s.user_id, status: s.status, currentPeriodEnd: s.current_period_end, stripeSubscriptionId: s.stripe_subscription_id })),
   }, { windowMs });
 
-  const subject = opsReportSubject(report);
-  if (dry) return NextResponse.json({ ok: true, dry: true, to, subject, report, text: opsReportText(report) });
+  // Maç akışı kotası %70'i geçtiyse rapor başına uyarı (2026-11-28: kota sessizce bitmişti).
+  const quota = feedQuotaNotice(await readFeedQuota(), Date.now());
+  const subject = (quota ? (quota.level === 'warn' ? '[Kota] ' : '[KOTA ALARMI] ') : '') + opsReportSubject(report);
+  const text = (quota ? `${quota.text}\n\n` : '') + opsReportText(report);
+  const html = (quota ? `<p style="margin:0 0 16px;padding:12px;border:2px solid #b91c1c;font:600 14px sans-serif;color:#b91c1c">${quota.text}</p>` : '') + opsReportHtml(report);
+  if (dry) return NextResponse.json({ ok: true, dry: true, to, subject, quota, report, text });
   try {
-    await sendOpsReportEmail(to, { subject, html: opsReportHtml(report), text: opsReportText(report) });
+    await sendOpsReportEmail(to, { subject, html, text });
   } catch (e: any) {
     console.error('[ops-report] send failed', e?.message);
     return NextResponse.json({ ok: false, error: e?.message || 'send failed', subject }, { status: 500 });
