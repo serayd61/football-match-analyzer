@@ -66,3 +66,7 @@ export const PLAY_LAUNCH_CAMPAIGN_KEY = 'play-launch-2026-10';
 // Telegram tanıtımı (2026-10-31): her yeni kayda tek seferlik "günlük seçimler kanalda" e-postası.
 export const TELEGRAM_INTRO_CAMPAIGN_KEY = 'telegram-intro-2026-11';
 export const TELEGRAM_URL = 'https://t.me/fanalytics_pro';
+
+// Hizmet kesintisi bildirimi (2026-11-28): 25–28 Kasım'da maç akışı durdu, yeni maç ve
+// tahmin yayınlanmadı. Tek seferlik özür; neden ayrıntısı verilmez.
+export const SERVICE_NOTICE_CAMPAIGN_KEY = 'service-notice-2026-11';

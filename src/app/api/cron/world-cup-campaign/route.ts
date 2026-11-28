@@ -13,9 +13,9 @@
 
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient, SupabaseClient } from '@supabase/supabase-js';
-import { sendWorldCupCampaignEmail, sendReengagementEmail, sendWelcomeEmail, SITE_URL, sendUnfinishedSignupEmail, sendTelegramIntroEmail, sendPlayLaunchEmail } from '@/lib/email';
+import { sendWorldCupCampaignEmail, sendReengagementEmail, sendWelcomeEmail, SITE_URL, sendUnfinishedSignupEmail, sendTelegramIntroEmail, sendPlayLaunchEmail, sendServiceNoticeEmail } from '@/lib/email';
 import { loadMemberCountries, memberOffer } from '@/lib/site/member-country';
-import { WORLD_CUP_CAMPAIGN_KEY, WORLD_CUP_RELAUNCH_KEY, REENGAGE_CAMPAIGN_KEY, WELCOME_CAMPAIGN_KEY, unsubscribeUrl, UNFINISHED_SIGNUP_CAMPAIGN_KEY, PLAY_LAUNCH_CAMPAIGN_KEY, TELEGRAM_INTRO_CAMPAIGN_KEY, TELEGRAM_URL, PLAY_STORE_URL } from '@/lib/campaign';
+import { WORLD_CUP_CAMPAIGN_KEY, WORLD_CUP_RELAUNCH_KEY, REENGAGE_CAMPAIGN_KEY, WELCOME_CAMPAIGN_KEY, unsubscribeUrl, UNFINISHED_SIGNUP_CAMPAIGN_KEY, PLAY_LAUNCH_CAMPAIGN_KEY, SERVICE_NOTICE_CAMPAIGN_KEY, TELEGRAM_INTRO_CAMPAIGN_KEY, TELEGRAM_URL, PLAY_STORE_URL } from '@/lib/campaign';
 import { ADMIN_EMAILS } from '@/lib/admin/emails';
 
 export const dynamic = 'force-dynamic';
@@ -71,8 +71,15 @@ export async function GET(request: NextRequest) {
   const isPlayLaunch = searchParams.get('type') === 'play-launch';
   // Telegram tanıtımı (2026-10-31): son N gün (varsayılan 3) içinde kayıt olan HERKESE (aboneler dahil) tek seferlik.
   const isTelegram = searchParams.get('type') === 'telegram';
+  // Hizmet kesintisi bildirimi (2026-11-28): kayıtlı üyelere tek seferlik özür. ?active=N →
+  // yalnız son N günde siteye gelmiş üyeler (profiles.last_seen_at); verilmezse tüm üyeler.
+  const isServiceNotice = searchParams.get('type') === 'service-notice';
+  const activeParam = parseInt(searchParams.get('active') || '', 10);
+  const activeDays = isServiceNotice && Number.isFinite(activeParam) && activeParam > 0 ? activeParam : null;
   const relaunch = searchParams.get('relaunch') === '1';
-  const activeKey = isTelegram
+  const activeKey = isServiceNotice
+    ? SERVICE_NOTICE_CAMPAIGN_KEY
+    : isTelegram
     ? TELEGRAM_INTRO_CAMPAIGN_KEY
     : isPlayLaunch
     ? PLAY_LAUNCH_CAMPAIGN_KEY
@@ -85,7 +92,7 @@ export async function GET(request: NextRequest) {
         : relaunch
           ? WORLD_CUP_RELAUNCH_KEY
           : WORLD_CUP_CAMPAIGN_KEY;
-  const campaignType = isTelegram ? 'telegram' : isPlayLaunch ? 'play-launch' : isUnfinished ? 'unfinished-signup' : isWelcome ? 'welcome' : isReengage ? 'reengage' : 'worldcup';
+  const campaignType = isServiceNotice ? 'service-notice' : isTelegram ? 'telegram' : isPlayLaunch ? 'play-launch' : isUnfinished ? 'unfinished-signup' : isWelcome ? 'welcome' : isReengage ? 'reengage' : 'worldcup';
   const limitParam = parseInt(searchParams.get('limit') || '', 10);
   const batchLimit = Number.isFinite(limitParam) && limitParam > 0 ? limitParam : Infinity;
   const daysParam = parseInt(searchParams.get('days') || '', 10);
@@ -106,7 +113,9 @@ export async function GET(request: NextRequest) {
   const monthlyOf = (email: string) => memberOffer(countries, email).monthly;
 
   const sendEmail = (email: string, name: string | null) =>
-    isTelegram
+    isServiceNotice
+      ? sendServiceNoticeEmail(email, { unsubscribeUrl: unsubscribeUrl(email), name })
+      : isTelegram
       ? sendTelegramIntroEmail(email, { telegramUrl: TELEGRAM_URL, dashboardUrl, unsubscribeUrl: unsubscribeUrl(email), name, playUrl: PLAY_STORE_URL })
       : isPlayLaunch
       ? sendPlayLaunchEmail(email, { unsubscribeUrl: unsubscribeUrl(email), name })
@@ -197,6 +206,18 @@ export async function GET(request: NextRequest) {
     }
   }
 
+  // Hizmet bildirimi + ?active=N: yalnız son N günde görülen üyeler. Okuma hatası → İPTAL
+  // (sessizce boş sayılırsa kimseye gitmez ama "gönderildi" sanılır).
+  let activeSet: Set<string> | null = null;
+  if (activeDays) {
+    const since = new Date(Date.now() - activeDays * 86_400_000).toISOString();
+    const { data: act, error: actErr } = await supabase.from('profiles').select('email').gte('last_seen_at', since);
+    if (actErr) {
+      return NextResponse.json({ success: false, aborted: true, reason: 'active_read_failed', error: actErr.message }, { status: 500 });
+    }
+    activeSet = new Set((act || []).map((r: any) => String(r.email || '').toLowerCase().trim()).filter(Boolean));
+  }
+
   // Yarım kalan kayıt: HEDEF LİSTE dar — yalnızca checkout'ta düşen pro denemeleri.
   // `users` tablosunun tamamı DEĞİL; bu bir duyuru değil, bir özür + tekrar
   // denemesi. subscriptions'ta e-posta yok, eşleme user_id → users.id.
@@ -231,6 +252,7 @@ export async function GET(request: NextRequest) {
     if (!email || !EMAIL_RE.test(email)) continue;
     if (seen.has(email) || unsub.has(email) || alreadySent.has(email) || email === canaryLower) continue;
     if (subscriberSet.has(email)) continue;
+    if (activeSet && !activeSet.has(email)) continue;
     if (isUnfinished && !retryIds.has(String((u as any).id))) continue;
     // Welcome: yalnızca son N gün içinde kayıt olanlar (varsayılan bugün)
     if (isWelcome && (!u.created_at || new Date(u.created_at).getTime() < welcomeCutoffMs)) continue;

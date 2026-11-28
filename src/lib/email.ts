@@ -749,6 +749,49 @@ Unsubscribe: ${o.unsubscribeUrl}`;
   if (error) throw new Error(error.message);
 }
 
+// ---------------------------------------------------------------------------
+// Hizmet kesintisi bildirimi (2026-11-28): 25–28 Kasım kesintisi için tek seferlik
+// özür. Pazarlama içeriği yok; yanıtlar destek kutusuna düşer.
+// ---------------------------------------------------------------------------
+export function buildServiceNoticeEmail(o: { unsubscribeUrl: string; name?: string | null }): { subject: string; html: string; text: string } {
+  const hi = o.name ? ` ${o.name}` : '';
+  const subject = 'Service interruption on 25–28 November — now resolved';
+  const body = `
+    <p>Hi${hi},</p>
+    <p>Between 25 and 28 November, a technical issue on our side interrupted our match data feed. During that time new matches and predictions were not published, and some pages showed no matches.</p>
+    <p>The issue is fixed and predictions are being published again as normal. Results for matches played during the interruption are being updated and will appear over the next day.</p>
+    <p>We're sorry for the disruption. We have added monitoring so that we catch this kind of problem early in future.</p>
+    <p>If anything still looks wrong on your account, reply to this e-mail or write to <a href="mailto:${SUPPORT_EMAIL}" style="color:#059669">${SUPPORT_EMAIL}</a> and we'll sort it out.</p>
+    <p>Thank you for your patience,<br>The Football Analytics team</p>`;
+  const html = trialShell('Service interruption — now resolved', '25–28 November', body, o.unsubscribeUrl);
+  const text = `Hi${hi},
+
+Between 25 and 28 November, a technical issue on our side interrupted our match data feed. During that time new matches and predictions were not published, and some pages showed no matches.
+
+The issue is fixed and predictions are being published again as normal. Results for matches played during the interruption are being updated and will appear over the next day.
+
+We're sorry for the disruption. We have added monitoring so that we catch this kind of problem early in future.
+
+If anything still looks wrong on your account, reply to this e-mail or write to ${SUPPORT_EMAIL} and we'll sort it out.
+
+Thank you for your patience,
+The Football Analytics team
+
+Unsubscribe: ${o.unsubscribeUrl}`;
+  return { subject, html, text };
+}
+
+export async function sendServiceNoticeEmail(to: string, o: { unsubscribeUrl: string; name?: string | null }): Promise<void> {
+  if (!RESEND_API_KEY) throw new Error('RESEND_API_KEY is not configured');
+  const resend = new Resend(RESEND_API_KEY);
+  const { subject, html, text } = buildServiceNoticeEmail(o);
+  const { error } = await resend.emails.send({
+    from: EMAIL_FROM, to, replyTo: SUPPORT_EMAIL, subject, html, text,
+    headers: { 'List-Unsubscribe': `<${o.unsubscribeUrl}>`, 'List-Unsubscribe-Post': 'List-Unsubscribe=One-Click' },
+  });
+  if (error) throw new Error(error.message);
+}
+
 // Sabah raporu (2026-11-02): kişiye özel günlük dönüş maili; içerik lib/site/morning-brief.ts'te hazır gelir.
 export async function sendMorningBriefEmail(to: string, b: { subject: string; title: string; sub: string; body: string; text: string }, unsubscribeUrl: string): Promise<void> {
   if (!RESEND_API_KEY) throw new Error('RESEND_API_KEY is not configured');
