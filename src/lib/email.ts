@@ -500,7 +500,7 @@ const trialBtn = (href: string, label: string) =>
 const trialPlay = (playUrl?: string) => playUrl
   ? `<table width="100%" cellpadding="0" cellspacing="0" role="presentation" style="margin:6px 0 18px"><tr><td align="center">
       <a href="${playUrl}" style="display:inline-block;background:#0d0f14;color:#e7eaf0;text-decoration:none;border:1px solid #1e2430;border-radius:10px;padding:10px 16px;font-size:13px;font-weight:600">▶&nbsp; Now on Google Play — get the Android app</a>
-      <div style="font-size:11px;color:#94a3b8;margin-top:6px">Same account, same predictions, kick-off reminders on your phone.</div>
+      <div style="font-size:11px;color:#94a3b8;margin-top:6px">Same account, same predictions, on your phone.</div>
     </td></tr></table>` : '';
 const trialStats = (stats: { n: number; won: number } | null) => stats && stats.n >= 10
   ? `<div style="background:#0d0f14;border:1px solid #1e2430;border-radius:16px;padding:20px;margin:0 0 22px;text-align:center">
