@@ -166,7 +166,19 @@ export async function GET(request: NextRequest) {
   // faz başına tek ek çağrı. Eşleme tablosu her turda tamamlanır (lig+gün başına 1 çağrı).
   const afOn = hasApiFootballKey();
   let afMapped = 0, afCaptured = 0, afMissed = 0;
-  if (afOn) { try { afMapped = (await buildAfMap(3, 20)).mapped ?? 0; } catch (e: any) { console.error('[snapshot-odds] af map:', e?.message); } }
+  // API-Football hataları (2026-11-23): 16 Eki'den beri veri gelmiyordu ve hiçbir yerde görünmüyordu.
+  // Her farklı hata bir kez toplanır; tur sonunda loglanır ve yanıta eklenir.
+  const afErrors = new Map<string, number>();
+  const afErr = (where: string, msg: string | undefined) => { const k = `${where}: ${String(msg || 'bilinmeyen hata').slice(0, 160)}`; afErrors.set(k, (afErrors.get(k) ?? 0) + 1); };
+  if (!afOn) console.warn('[snapshot-odds] API_FOOTBALL_KEY yok: Üst/Alt, KG yedeği ve bahisçi fiyatları yazılmayacak');
+  if (afOn) {
+    try {
+      const m: any = await buildAfMap(3, 20);
+      afMapped = m.mapped ?? 0;
+      if (m.error) afErr('map', m.error);
+      for (const e of (m.errors ?? []) as string[]) afErr('map', e.replace(/^[^:]*\|\d{4}-\d{2}-\d{2}: /, ''));
+    } catch (e: any) { afErr('map', e?.message); }
+  }
   const afIds = afOn ? await afIdsFor(todo.map((j) => j.fixtureId)) : new Map<number, number>();
 
   let captured = 0, missedN = 0, afFallback = 0;
@@ -196,6 +208,7 @@ export async function GET(request: NextRequest) {
     let afBooks: AfBookPrices[] | undefined;
     if (!odds && afId) {
       const r = await afOdds(afId);
+      if (!r.ok) afErr('odds', r.error);
       afPre = r.ok ? r.odds : null;
       afBooks = r.ok ? r.books : [];
       const fb = afToMatchOdds(afPre);
@@ -244,7 +257,7 @@ export async function GET(request: NextRequest) {
     // Üst/Alt 2,5 sütunları (ve KG akışta yoksa) API-Football'dan; hata yakalamayı bozmaz.
     if (!insErr && afId) {
       const r = afPre !== undefined ? { ok: true as const, odds: afPre, books: afBooks ?? [] } : await afOdds(afId);
-      if (r.ok) await writeBooks(job, afId, r.books, mins);
+      if (r.ok) await writeBooks(job, afId, r.books, mins); else afErr('odds', r.error);
       if (r.ok && r.odds && (r.odds.over25 || r.odds.bttsYes)) {
         const cols: Record<string, number | string> = { over25_odds: r.odds.over25 ?? 0, under25_odds: r.odds.under25 ?? 0, ou_provider: r.odds.bookmaker };
         if (!book?.btts && r.odds.bttsYes && r.odds.bttsNo) { cols.btts_yes_odds = r.odds.bttsYes; cols.btts_no_odds = r.odds.bttsNo; }
@@ -273,6 +286,7 @@ export async function GET(request: NextRequest) {
     const need = Array.from(latest.entries()).filter(([, v]) => !v.has).slice(0, 15);
     for (const [fid, v] of need) {
       const r = await afOdds(afAll.get(fid)!);
+      if (!r.ok) afErr('odds', r.error);
       if (r.ok && r.odds && r.odds.over25) {
         const { error } = await sb().from('prediction_odds').update({ over25_odds: r.odds.over25, under25_odds: r.odds.under25 ?? 0, ou_provider: r.odds.bookmaker }).eq('fixture_id', fid).eq('phase', v.phase);
         if (!error) afFilled++;
@@ -319,6 +333,9 @@ export async function GET(request: NextRequest) {
   // Yeni oran yazıldıysa siteyi hemen tazele (gün listesi, 1X2 anlık, pazar kitabı).
   if (captured + afCaptured + afFilled + (flash?.filled ?? 0) + (flash?.carried ?? 0) > 0) { try { revalidateTag(ODDS_TAG); } catch (e: any) { console.warn('[snapshot-odds] revalidate:', e?.message); } }
 
+  const afErrorList = Array.from(afErrors.entries()).map(([error, count]) => ({ error, count }));
+  if (afErrorList.length) console.error('[snapshot-odds] API-Football hataları:', JSON.stringify(afErrorList.slice(0, 10)));
+
   return NextResponse.json({
     ok: true,
     flashLive: flash,
@@ -327,6 +344,6 @@ export async function GET(request: NextRequest) {
     captured,
     missed: missedN,
     skippedMissed: missed.size,
-    apiFootball: afOn ? { mapped: afMapped, captured: afCaptured, missed: afMissed, filled: afFilled, fallback1x2: afFallback, bookRows: booksRows } : null,
+    apiFootball: afOn ? { mapped: afMapped, captured: afCaptured, missed: afMissed, filled: afFilled, fallback1x2: afFallback, bookRows: booksRows, errors: afErrorList.slice(0, 10) } : { error: 'API_FOOTBALL_KEY yok' },
   });
 }
