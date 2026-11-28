@@ -162,7 +162,8 @@ const norm = (s: string) => s.normalize('NFD').replace(/[\u0300-\u036f]/g, '').t
 export const toTag = (s: string) => `#${s.replace(/^#/, '').replace(/[^\p{L}\p{N}]/gu, '')}`;
 
 /** Takım/lig kelimeleriyle eşleşen trendler (ilgisiz trendlere etiket asılmaz). */
-export function matchTrends(legs: Leg[], trends: string[]): string[] {
+export type NameRow = Pick<Leg, 'homeName' | 'awayName' | 'leagueName'> & { leagueSlug?: string | null };
+export function matchTrends(legs: NameRow[], trends: string[]): string[] {
   const words = new Set<string>();
   for (const l of legs) for (const name of [l.homeName, l.awayName, l.leagueName]) for (const w of norm(name).split(/[^a-z0-9]+/)) if (w.length >= 4 && !GENERIC.has(w)) words.add(w);
   const out: string[] = [];
@@ -288,4 +289,89 @@ export function strongBoardText(board: StrongBoardLine[], lang: Lang, source: So
     text = [head, ...board.map((b, i) => `${boardMarket(b.market, lang)}: ${b.leagues.slice(0, take[i]).map((l) => `${l.name} ${l.won}/${l.n}`).join(' · ')}`), '', link].join('\n');
   }
   return text;
+}
+
+// ---------------------------------------------------------------------------
+// Boş gün kanıt kartı etiketleri (2026-11-15, kullanıcı: "boş günlerde kanıt kartı
+// atsın ama etiketler çok önemli, o günün trendleri etikete eklensin").
+// Kaynaklar: (1) günün trendleri (X + Google Trends RSS) → yalnız futbolla ilgili
+// olanlar (günün maçlarındaki takım/lig kelimesi, futbol anahtar kelimesi ya da
+// büyük kulüp adı; rugby/kriket vb. dışlanır); (2) günün programındaki turnuvalar
+// (Uluslar Ligi, Dünya Kupası elemesi, Premier League...); (3) o turnuvalardaki
+// takımlar. Sabit küme (10) + bunlar ≤ 30.
+// ---------------------------------------------------------------------------
+const FOOTBALL_WORDS = ['football', 'soccer', 'futbol', 'fussball', 'fußball', 'calcio', 'fútbol', 'futebol', 'uefa', 'fifa', 'premier league', 'bundesliga', 'la liga', 'laliga', 'serie a', 'ligue 1', 'süper lig', 'super lig', 'eredivisie', 'championship', 'champions league', 'europa league', 'conference league', 'nations league', 'world cup', 'copa america', 'afcon', 'euro 2028', 'euro 2032', 'derby', 'derbi', 'matchday', 'transfer', 'milli takım', 'millî', 'national team', 'nationalmannschaft', 'dfb', 'tff', 'fa cup', 'dfb pokal', 'coppa italia', 'copa del rey', 'libertadores', 'mls', 'liga mx', 'brasileirao', 'brasileirão', 'xg', 'goalkeeper', 'striker', 'midfielder', 'hat-trick', 'penalty shootout', 'var decision'];
+const NOT_FOOTBALL = ['rugby', 'cricket', 'nfl', 'nba', 'nhl', 'mlb', 'basketball', 'basketbol', 'tennis', 'tenis', 'golf', 'f1', 'formula 1', 'ufc', 'boxing', 'boks', 'handball', 'hentbol', 'volleyball', 'voleybol', 'ice hockey', 'eishockey', 'super bowl', 'wwe', 'darts', 'snooker', 'cycling', 'esports'];
+const BIG_CLUBS = ['arsenal', 'chelsea', 'liverpool', 'manchester united', 'man utd', 'manchester city', 'man city', 'tottenham', 'spurs', 'newcastle', 'aston villa', 'everton', 'west ham', 'celtic', 'rangers', 'real madrid', 'barcelona', 'barça', 'atletico', 'atlético', 'sevilla', 'valencia', 'athletic bilbao', 'bayern', 'dortmund', 'bvb', 'leverkusen', 'leipzig', 'schalke', 'frankfurt', 'stuttgart', 'gladbach', 'hamburger sv', 'hsv', 'juventus', 'inter milan', 'ac milan', 'napoli', 'roma', 'lazio', 'atalanta', 'fiorentina', 'psg', 'paris saint-germain', 'marseille', 'lyon', 'monaco', 'lille', 'ajax', 'psv', 'feyenoord', 'benfica', 'porto', 'sporting cp', 'galatasaray', 'fenerbahçe', 'fenerbahce', 'beşiktaş', 'besiktas', 'trabzonspor', 'red star', 'crvena zvezda', 'partizan', 'dinamo zagreb', 'hajduk', 'olympiacos', 'panathinaikos', 'anderlecht', 'club brugge', 'basel', 'young boys', 'salzburg', 'flamengo', 'palmeiras', 'boca juniors', 'river plate', 'al hilal', 'al nassr', 'inter miami', 'la galaxy'];
+/** Uluslararası turnuvalar: katalogda yok, lig adına göre (öncelik = sıra). */
+const INTL_COMPETITIONS: { re: RegExp; tags: string[] }[] = [
+  { re: /uefa nations league|^nations league/i, tags: ['#NationsLeague', '#UEFANationsLeague'] },
+  { re: /concacaf nations league/i, tags: ['#NationsLeague', '#CNL'] },
+  { re: /world cup qual/i, tags: ['#WorldCupQualifiers', '#WCQ', '#WorldCup2026'] },
+  { re: /africa cup of nations/i, tags: ['#AFCON', '#AFCONQualifiers'] },
+  { re: /euro.*qual|european championship qual/i, tags: ['#EUROQualifiers'] },
+  { re: /copa america/i, tags: ['#CopaAmerica'] },
+  { re: /asian cup/i, tags: ['#AsianCup'] },
+  { re: /^friendlies$|international friendl/i, tags: ['#InternationalFriendly', '#InternationalBreak'] },
+];
+/** Kulüp ligleri: yalnız katalog slug'ıyla (Gana "Premier League" gibi ad çakışmaları etiketlenmez); sıra = öncelik. */
+const CLUB_COMPETITIONS: [slug: string, tags: string[]][] = [
+  ['champions-league', ['#ChampionsLeague', '#UCL']], ['europa-league', ['#EuropaLeague', '#UEL']], ['conference-league', ['#ConferenceLeague', '#UECL']],
+  ['premier-league', ['#PremierLeague', '#PL']], ['la-liga', ['#LaLiga']], ['bundesliga', ['#Bundesliga']], ['serie-a', ['#SerieA']], ['ligue-1', ['#Ligue1']],
+  ['super-lig', ['#SüperLig']], ['eredivisie', ['#Eredivisie']], ['championship', ['#EFLChampionship', '#EFL']], ['liga-portugal', ['#LigaPortugal']],
+  ['brasileirao', ['#Brasileirao']], ['mls', ['#MLS']], ['liga-mx', ['#LigaMX']], ['ekstraklasa', ['#Ekstraklasa']], ['eliteserien', ['#Eliteserien']], ['superligaen', ['#Superligaen']],
+];
+const competitionIndex = (r: NameRow): number => {
+  const i = INTL_COMPETITIONS.findIndex((c) => c.re.test(r.leagueName.trim()));
+  if (i >= 0) return i;
+  const j = r.leagueSlug ? CLUB_COMPETITIONS.findIndex(([slug]) => slug === r.leagueSlug) : -1;
+  return j >= 0 ? INTL_COMPETITIONS.length + j : -1;
+};
+const competitionTags = (i: number): string[] => (i < INTL_COMPETITIONS.length ? INTL_COMPETITIONS[i].tags : CLUB_COMPETITIONS[i - INTL_COMPETITIONS.length][1]);
+export const DAY_TREND_MAX_EXTRA = INSTAGRAM_MAX_TAGS - INSTAGRAM_TAGS.en.length; // 20
+const TAG_MAX_LEN = 20; // trend/takım etiketi (uzun TR tamlamaları düşer); turnuva etiketleri küratörlü, sınırsız
+const CLUB_SUFFIX = /\b(fc|sc|ac|cf|afc|sk|bk|if|fk|kf|nk|cd|ud|sd|u21|u19|w)\b\.?/gi;
+
+/** Trend → okunur hashtag: kelime başları büyük, harf+rakam kalır (#ArsenalWomen). */
+export function trendTag(s: string): string | null {
+  const words = s.replace(/^#/, '').replace(CLUB_SUFFIX, ' ').trim().split(/\s+/).filter(Boolean);
+  if (!words.length) return null;
+  const body = words.map((w) => (w === w.toUpperCase() && w.length <= 4 ? w : w.charAt(0).toUpperCase() + w.slice(1))).join('').replace(/[^\p{L}\p{N}]/gu, '');
+  if (body.length < 2 || body.length > TAG_MAX_LEN || /^\p{N}+$/u.test(body)) return null;
+  return `#${body}`;
+}
+
+/** Trend futbolla ilgili mi? Günün maç kelimeleri, futbol anahtar kelimesi ya da büyük kulüp; spor dışlama listesi önce gelir. */
+export function isFootballTrend(trend: string, rows: NameRow[] = []): boolean {
+  const t = norm(trend.replace(/^#/, ''));
+  if (NOT_FOOTBALL.some((w) => t.includes(w))) return false;
+  if (FOOTBALL_WORDS.some((w) => t.includes(norm(w)))) return true;
+  if (BIG_CLUBS.some((c) => t.includes(norm(c)))) return true;
+  return matchTrends(rows, [trend]).length > 0;
+}
+
+export interface DayTrendTagsInput { trends: string[]; rows: NameRow[]; lang?: Lang }
+
+/** Boş gün etiketleri: futbol trendleri → günün turnuvaları → o turnuvaların takımları (tekil, ≤20). */
+export function dayTrendTags({ trends, rows }: DayTrendTagsInput, max = DAY_TREND_MAX_EXTRA): string[] {
+  const out: string[] = []; const seen = new Set<string>();
+  const push = (tag: string | null) => { if (!tag) return; const k = norm(tag); if (!seen.has(k) && out.length < max) { seen.add(k); out.push(tag); } };
+  for (const t of trends) if (isFootballTrend(t, rows)) push(trendTag(t));
+  // Günün turnuvaları: öncelik sırası (uluslararası önce, sonra kulüp ligleri), eşitse maç sayısı.
+  const byComp = new Map<number, { n: number; rows: NameRow[] }>();
+  for (const r of rows) {
+    const i = competitionIndex(r);
+    if (i < 0) continue;
+    const e = byComp.get(i) ?? { n: 0, rows: [] }; e.n++; e.rows.push(r); byComp.set(i, e);
+  }
+  const comps = [...byComp.entries()].sort((a, b) => a[0] - b[0] || b[1].n - a[1].n);
+  for (const [i] of comps.slice(0, 4)) for (const tag of competitionTags(i)) push(tag);
+  // Takımlar: öncelikli turnuvalardan, büyük kulüpler önce; en fazla 6.
+  const teams: string[] = [];
+  for (const [, e] of comps) for (const r of e.rows) for (const name of [r.homeName, r.awayName]) if (!teams.includes(name)) teams.push(name);
+  const big = (n: string) => BIG_CLUBS.some((c) => norm(n).includes(norm(c)));
+  const teamTags = teams.sort((a, b) => Number(big(b)) - Number(big(a))).map((n) => trendTag(n)).filter((t): t is string => !!t);
+  let added = 0;
+  for (const t of teamTags) { if (added >= 6) break; const before = out.length; push(t); if (out.length > before) added++; }
+  return out;
 }
