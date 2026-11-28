@@ -3,6 +3,8 @@
 // Birincil canlı/fikstür/sonuç kaynağı. Sportmonks'un yerini aldı.
 // ============================================================================
 
+import { noteFeedQuota } from './feed-quota';
+
 const HOST = 'free-api-live-football-data.p.rapidapi.com';
 /** Akış isteği başına üst sınır (ms). Normal yanıt ~1 sn; 8 sn üstü sağlayıcı arızasıdır. */
 export const FF_TIMEOUT_MS = Math.max(2000, Number(process.env.FOOTBALL_API_TIMEOUT_MS) || 8000);
@@ -42,6 +44,7 @@ async function ffFetch(path: string): Promise<any | null> {
       console.error(`[free-football] ${path} HTTP ${res.status} (anahtar #${keyIdx + 1} geçersiz)`);
       keyIdx = (keyIdx + 1) % KEYS.length;
     }
+    if (res) noteFeedQuota(res.headers);
     if (!res || !res.ok) {
       console.error(`[free-football] ${path} HTTP ${res?.status}`);
       return null;
