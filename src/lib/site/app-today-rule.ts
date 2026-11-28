@@ -47,3 +47,10 @@ export function legLabelKey(market: string, selection: string): LegLabelKey {
   if (market === 'btts') return 'selBtts';
   return selection === '1' ? 'selHome' : selection === '2' ? 'selAway' : 'selDraw';
 }
+
+// Başlıktaki herkese açık karne: önce son 7 gün; o pencerede sonuçlanan seçim azsa
+// (milli ara: 15 Kas 2026'da 9) 30 güne düşer. İkisinde de azsa satır basılmaz.
+export const APP_TODAY_RECORD_MIN = 10;
+export const APP_TODAY_RECORD_WINDOWS = [7, 30] as const;
+export const recordEnough = (r: { n: number } | null | undefined, min = APP_TODAY_RECORD_MIN): boolean => !!r && r.n >= min;
+
