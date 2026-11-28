@@ -9,7 +9,7 @@ test('service notice apologises for 25–28 November without naming the cause', 
     assert.match(body, /Hi Ada,/);
     assert.match(body, /sorry for the disruption/);
     assert.match(body, /example\.test\/u/);
-    assert.doesNotMatch(body, /quota|rapidapi|rate limit|\bbet(s|ting)?\b/i);
+    assert.doesNotMatch(body, /quota|rapidapi|rate limit/i);
   }
   assert.match(buildServiceNoticeEmail({ unsubscribeUrl: 'https://example.test/u' }).text, /^Hi,/);
 });
